@@ -21,7 +21,7 @@ services:
       MYSQL_DATABASE: "B-Im_Chheangngim-db"
       MYSQL_ROOT_PASSWORD: "Hello@123"
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:

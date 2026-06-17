@@ -18,7 +18,9 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/
 RUN sed -i 's/Port 22/Port 2222/' /etc/ssh/sshd_config
 
 # 3. Configure Nginx Reverse Proxy Rules
-RUN rm /etc/nginx/sites-enabled/default
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && rm -f /etc/nginx/sites-available/default
+
 RUN echo 'server { \
     listen 8443; \
     server_name localhost; \
@@ -31,7 +33,7 @@ RUN echo 'server { \
     } \
 }' > /etc/nginx/sites-available/idcard-proxy
 
-RUN ln -s /etc/nginx/sites-available/idcard-proxy /etc/nginx/sites-enabled/
+RUN ln -sf /etc/nginx/sites-available/idcard-proxy /etc/nginx/sites-enabled/
 
 # 4. Clone and Build your Year 4 DevOps Spring Boot ID Card System Repository
 WORKDIR /app
