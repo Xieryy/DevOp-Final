@@ -10,6 +10,11 @@
         version: 'main'
         force: yes
 
+    - name: Ensure Maven wrapper is executable
+      ansible.builtin.file:
+        path: /app/mvnw
+        mode: '0755'
+
     - name: Build the application using Maven wrapper (skipping tests for build step)
       ansible.builtin.command:
         cmd: ./mvnw clean package -DskipTests
