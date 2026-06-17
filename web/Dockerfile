@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Install foundational packages: JDK 21, Nginx, OpenSSH Server, Git, and supervisor
+# 1. Install foundational packages: JDK 21, Nginx, OpenSSH Server, Git, supervisor, and php-cli
 RUN apt-get update && apt-get install -y \
     openjdk-25-jdk \
     nginx \
@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     git \
     supervisor \
     curl \
+    php-cli \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Configure SSH Access Server on Port 2222
