@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  web-server:
+    build:
+      context: ./web
+    container_name: itc-web-app
+    ports:
+      - "8443:8443"
+      - "2222:2222"
+    depends_on:
+      - mysql-db
+    networks:
+      - itc-devops-net
+    restart: always
+
+  mysql-db:
+    image: mysql:8.0.41
+    container_name: itc-mysql-container
+    environment:
+      MYSQL_DATABASE: "B-Im_Chheangngim-db"
+      MYSQL_ROOT_PASSWORD: "Hello@123"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - itc-devops-net
+    restart: always
+
+networks:
+  itc-devops-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
