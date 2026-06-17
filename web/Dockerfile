@@ -3,7 +3,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # 1. Install foundational packages: JDK 21, Nginx, OpenSSH Server, Git, and supervisor
 RUN apt-get update && apt-get install -y \
-    openjdk-21-jdk \
+    openjdk-25-jdk \
     nginx \
     openssh-server \
     git \
