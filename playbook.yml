@@ -1,0 +1,31 @@
+---
+- name: Automate Spring Boot Deployment and Verification
+  hosts: webserver
+  become: yes
+  tasks:
+    - name: Discard any local changes and pull the latest code from GitHub
+      ansible.builtin.git:
+        repo: 'https://github.com/Xieryy/DevOp-Final.git'
+        dest: '/app'
+        version: 'main'
+        force: yes
+
+    - name: Build the application using Maven wrapper (skipping tests for build step)
+      ansible.builtin.command:
+        cmd: ./mvnw clean package -DskipTests
+        chdir: /app
+
+    - name: Run unit/integration tests against SQLite database
+      ansible.builtin.command:
+        cmd: ./mvnw test
+        chdir: /app
+
+    - name: Backup the MySQL database to a SQL dump file
+      ansible.builtin.shell:
+        cmd: mysqldump -h mysql-db -u root -pHello@123 B-Im_Chheangngim-db > /app/db_backup.sql
+      register: backup_result
+
+    - name: Print backup confirmation
+      ansible.builtin.debug:
+        msg: "Database backup completed successfully and saved to /app/db_backup.sql"
+      when: backup_result.rc == 0

@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     curl \
     php-cli \
+    mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Configure SSH Access Server on Port 2222
