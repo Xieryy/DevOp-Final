@@ -139,19 +139,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y ansible sshpass openssh-client
 
-      # 3. Write hosts.ini from secrets (if WEBSERVER_HOST secret is set)
-      - name: Write Ansible inventory from secrets
-        run: |
-          cat > hosts.ini <<EOF
-          [webserver]
-          ${WEBSERVER_HOST} ansible_port=${WEBSERVER_PORT} ansible_user=root ansible_ssh_pass=${WEBSERVER_SSH_PASS} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-          EOF
-        env:
-          WEBSERVER_HOST: ${{ secrets.WEBSERVER_HOST }}
-          WEBSERVER_PORT: ${{ secrets.WEBSERVER_PORT }}
-          WEBSERVER_SSH_PASS: ${{ secrets.WEBSERVER_SSH_PASS }}
-
-      # 4. Run the playbook
+      # 3. Run the playbook (uses hosts.ini committed in the repo)
       - name: Run Ansible Playbook
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
