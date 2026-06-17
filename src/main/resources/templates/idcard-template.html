@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ID Card Generation</title>
+    <style>
+        /* Card Canvas Setup */
+        .id-card-container {
+            width: 320px;
+            height: 520px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Dynamic Theme Colors mapping from Template Entity */
+        .card-header {
+            background-color: var(--primary-color, #1d4ed8);
+            color: #ffffff;
+            padding: 20px 15px;
+            text-align: center;
+            border-bottom: 4px solid var(--secondary-color, #e0e7ff);
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .card-header p {
+            margin: 5px 0 0 0;
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        /* Profile Picture Styling */
+        .photo-container {
+            text-align: center;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        .profile-photo {
+            width: 120px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 3px solid var(--primary-color, #1d4ed8);
+            background-color: #f1f5f9;
+        }
+
+        /* Main Identity Body Data */
+        .card-body {
+            flex-grow: 1;
+            padding: 0 25px;
+            text-align: center;
+            color: var(--text-color, #111827);
+        }
+
+        .user-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            text-transform: capitalize;
+        }
+
+        .user-title {
+            font-size: 13px;
+            color: #4b5563;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+        }
+
+        /* Meta Metadata Details Grid */
+        .meta-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            text-align: left;
+            font-size: 11px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .meta-item span {
+            display: block;
+            color: #64748b;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9px;
+        }
+
+        .meta-item p {
+            margin: 2px 0 0 0;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* QR Code + Barcode section                                           */
+        /* ------------------------------------------------------------------ */
+        .code-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 12px 10px 12px;
+        }
+
+        /* QR Code block */
+        .qr-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .qr-block img {
+            width: 72px;
+            height: 72px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #ffffff;
+        }
+
+        .qr-label {
+            font-size: 8px;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Barcode block */
+        .barcode-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex: 1;
+        }
+
+        .barcode-block img {
+            width: 100%;
+            max-width: 170px;
+            height: 44px;
+            object-fit: fill;
+        }
+
+        .barcode-text {
+            font-size: 8px;
+            color: #334155;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Footer Placeholders for Barcodes / QR Codes */
+        .card-footer {
+            background-color: #f1f5f9;
+            padding: 10px 12px;
+            text-align: center;
+            border-top: 1px dashed #cbd5e1;
+            font-size: 10px;
+            color: #64748b;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="id-card-container"
+         th:style="'--primary-color: ' + ${template.primaryColor} +
+                   '; --secondary-color: ' + ${template.secondaryColor} +
+                   '; --text-color: ' + ${template.textColor} + ';'">
+
+        <div class="card-header">
+            <h2 th:text="${template.organizationName}">ORGANIZATION NAME</h2>
+            <p th:text="${template.tagline}">Institution Tagline</p>
+        </div>
+
+        <div class="photo-container">
+            <img class="profile-photo"
+                 th:src="${profile.photoFileName != null} ? '/api/profiles/photos/' + ${profile.photoFileName} : 'https://via.placeholder.com/120x140?text=No+Photo'"
+                 alt="User Photo"/>
+        </div>
+
+        <div class="card-body">
+            <div class="user-name" th:text="${profile.fullName}">John Doe</div>
+            <div class="user-title" th:text="${profile.title}">Software Engineer</div>
+
+            <div class="meta-details">
+                <div class="meta-item">
+                    <span>REG ID</span>
+                    <p th:text="${profile.registrationNumber}">2026-DEPT-001</p>
+                </div>
+                <div class="meta-item">
+                    <span>DEPARTMENT</span>
+                    <p th:text="${profile.department}">Engineering</p>
+                </div>
+                <div class="meta-item">
+                    <span>BLOOD GROUP</span>
+                    <p th:text="${profile.bloodGroup != null ? profile.bloodGroup : 'N/A'}">O+</p>
+                </div>
+                <div class="meta-item">
+                    <span>EXPIRY DATE</span>
+                    <p th:text="${profile.expiryDate}">2027-12-31</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- QR Code + Barcode row                                             -->
+        <!-- ================================================================ -->
+        <div class="code-section">
+
+            <!-- QR Code (verification URL) -->
+            <div class="qr-block" th:if="${qrCodeBase64 != null}">
+                <img th:src="${qrCodeBase64}" alt="QR Code"/>
+                <span class="qr-label">Scan to Verify</span>
+            </div>
+
+            <!-- Fallback when no UUID exists yet (preview mode) -->
+            <div class="qr-block" th:unless="${qrCodeBase64 != null}"
+                 style="width:72px;height:72px;border:1px dashed #cbd5e1;border-radius:4px;
+                        display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:8px;color:#94a3b8;text-align:center;">No QR</span>
+            </div>
+
+            <!-- Linear Barcode (Code-128 or EAN-13) -->
+            <div class="barcode-block" th:if="${barcodeBase64 != null}">
+                <img th:src="${barcodeBase64}" alt="Barcode"/>
+                <span class="barcode-text" th:text="${barcodeLabel}">REG-NUMBER</span>
+            </div>
+
+            <!-- Fallback when no registration number exists yet -->
+            <div class="barcode-block" th:unless="${barcodeBase64 != null}"
+                 style="height:44px;border:1px dashed #cbd5e1;border-radius:4px;
+                        display:flex;align-items:center;justify-content:center;flex:1;">
+                <span style="font-size:8px;color:#94a3b8;">No Barcode</span>
+            </div>
+
+        </div>
+
+        <div class="card-footer">
+            <span th:text="${profile.type}">STUDENT</span> ID CARD SYSTEM
+        </div>
+    </div>
+
+</body>
+</html>
