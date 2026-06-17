@@ -124,7 +124,8 @@ jobs:
 # ════════════════════════════════════════════════════════════════════════════════
   deploy:
     name: 🚀 Deploy via Ansible
-    runs-on: ubuntu-latest
+    # Self-hosted runner runs on YOUR machine — can reach local Docker containers
+    runs-on: self-hosted
     needs: build-and-test
     if: success()
 
@@ -133,14 +134,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Ansible + SSH tools
-      - name: Install Ansible & sshpass
+      # 2. Run Ansible inside Docker (works on Windows self-hosted runner)
+      - name: Run Ansible Playbook via Docker
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y ansible sshpass openssh-client
-
-      # 3. Run the playbook (uses hosts.ini committed in the repo)
-      - name: Run Ansible Playbook
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: "False"
-        run: ansible-playbook -i hosts.ini playbook.yml
+          docker run --rm `
+            -v "${env:GITHUB_WORKSPACE}:/ansible" `
+            -w /ansible `
+            --network idcard_itc-devops-net `
+            alpine sh -c `
+            "apk add --no-cache ansible sshpass openssh-client && ansible-playbook -i hosts.ini playbook.yml"
