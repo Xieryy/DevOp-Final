@@ -21,9 +21,31 @@ services:
       MYSQL_DATABASE: "B-Im_Chheangngim-db"
       MYSQL_ROOT_PASSWORD: "Hello@123"
     ports:
+      # Expose MySQL to host so remote tools (DBeaver, etc.) can also connect
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - itc-devops-net
+    restart: always
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: itc-phpmyadmin
+    environment:
+      # Point phpMyAdmin at the MySQL container (by service name on Docker network)
+      PMA_HOST: mysql-db
+      PMA_PORT: 3306
+      # Pre-fill the root password so login is one-click
+      PMA_USER: root
+      PMA_PASSWORD: "Hello@123"
+      # Allow login from any host (enables remote browser access)
+      PMA_ARBITRARY: 1
+    ports:
+      # Accessible from ANY machine on the network at http://<your-pc-ip>:8081
+      - "8081:80"
+    depends_on:
+      - mysql-db
     networks:
       - itc-devops-net
     restart: always

@@ -8,7 +8,7 @@ on:
 
 # ── Shared env ────────────────────────────────────────────────────────────────
 env:
-  JAVA_VERSION: '21'
+  JAVA_VERSION: '25'
   JAR_NAME: idcard-0.0.1-SNAPSHOT.jar
 
 jobs:
@@ -46,9 +46,7 @@ jobs:
           distribution: temurin
           cache: maven
 
-      # 4. Override java.version in pom.xml to 21 so Maven compiles correctly on CI
-      - name: Pin compiler target to Java 21 for CI
-        run: sed -i 's|<java.version>25</java.version>|<java.version>21</java.version>|g' pom.xml
+      # 4. (No patch needed — pom.xml already targets Java 25, matching the runner JDK)
 
       # 5. Make Maven wrapper executable (Linux)
       - name: Make mvnw executable
@@ -121,25 +119,49 @@ jobs:
 
 # ════════════════════════════════════════════════════════════════════════════════
 # JOB 3 – Deploy via Ansible (only when build-and-test succeeds)
+#          Connects to local server via Pinggy TCP tunnel (publicly accessible)
 # ════════════════════════════════════════════════════════════════════════════════
   deploy:
     name: 🚀 Deploy via Ansible
-    # Self-hosted runner runs on YOUR machine — can reach local Docker containers
-    runs-on: self-hosted
+    runs-on: ubuntu-latest   # cloud runner reaches server through Pinggy tunnel
     needs: build-and-test
     if: success()
 
     steps:
-      # 1. Checkout so we have hosts.ini and playbook.yml
+      # 1. Checkout so we have playbook.yml
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Run Ansible inside Docker (works on Windows self-hosted runner)
-      - name: Run Ansible Playbook via Docker
+      # 2. Install Ansible + SSH tools on the ubuntu runner
+      - name: Install Ansible & sshpass
         run: |
-          docker run --rm `
-            -v "${env:GITHUB_WORKSPACE}:/ansible" `
-            -w /ansible `
-            --network idcard_itc-devops-net `
-            alpine sh -c `
-            "apk add --no-cache ansible sshpass openssh-client && ansible-playbook -i hosts.ini playbook.yml"
+          sudo apt-get update -y
+          sudo apt-get install -y ansible sshpass openssh-client
+
+      # 3. Write hosts.ini using the Pinggy TCP tunnel address from GitHub Secrets
+      #    ─────────────────────────────────────────────────────────────────────
+      #    Add these secrets in GitHub → Settings → Secrets → Actions:
+      #      PINGGY_HOST  →  a.pinggy.io
+      #      PINGGY_PORT  →  <port shown in your Pinggy terminal, e.g. 43210>
+      #      SSH_PASS     →  Hello@123
+      #    ─────────────────────────────────────────────────────────────────────
+      - name: Write Ansible inventory (via Pinggy tunnel)
+        run: |
+          cat > hosts.ini << 'EOF'
+          [webserver]
+          $PINGGY_HOST ansible_port=$PINGGY_PORT ansible_user=root ansible_ssh_pass=$SSH_PASS ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+          EOF
+          # Substitute environment variables into the file
+          envsubst < hosts.ini > hosts_final.ini && mv hosts_final.ini hosts.ini
+          echo "Generated hosts.ini:"
+          cat hosts.ini
+        env:
+          PINGGY_HOST: ${{ secrets.PINGGY_HOST }}
+          PINGGY_PORT: ${{ secrets.PINGGY_PORT }}
+          SSH_PASS: ${{ secrets.SSH_PASS }}
+
+      # 4. Run the Ansible playbook through the Pinggy tunnel
+      - name: Run Ansible Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: ansible-playbook -i hosts.ini playbook.yml
