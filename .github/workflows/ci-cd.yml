@@ -38,7 +38,7 @@ jobs:
           echo "email=$(git log --format='%ae' -1 HEAD)" >> "$GITHUB_OUTPUT"
           echo "name=$(git log --format='%an' -1 HEAD)"  >> "$GITHUB_OUTPUT"
 
-      # 3. Set up JDK
+      # 3. Set up JDK — must match java.version in pom.xml (21 is LTS and compatible)
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -46,15 +46,19 @@ jobs:
           distribution: temurin
           cache: maven
 
-      # 4. Make Maven wrapper executable (Linux)
+      # 4. Override java.version in pom.xml to 21 so Maven compiles correctly on CI
+      - name: Pin compiler target to Java 21 for CI
+        run: sed -i 's|<java.version>25</java.version>|<java.version>21</java.version>|g' pom.xml
+
+      # 5. Make Maven wrapper executable (Linux)
       - name: Make mvnw executable
         run: chmod +x mvnw
 
-      # 5. Build & run tests — output saved to build-output.txt
+      # 6. Build & run tests — output saved to build-output.txt
       - name: Build and test with Maven
         run: ./mvnw clean package 2>&1 | tee build-output.txt
 
-      # 6. Archive the JAR and build log regardless of outcome
+      # 7. Archive the JAR and build log regardless of outcome
       - name: Archive build artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -65,8 +69,8 @@ jobs:
             target/${{ env.JAR_NAME }}
             build-output.txt
 
-      # 7. Publish JUnit test results
-      - name: Publish test results
+      # 8. Publish JUnit test results
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -93,7 +97,7 @@ jobs:
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "❌ BUILD FAILED: ${{ github.repository }} [Run #${{ github.run_number }}]"
-          # Always CC srengty@gmail.com; also email the developer who broke the build
+          # Always send to srengty@gmail.com; also email the developer who broke the build
           to: srengty@gmail.com,${{ needs.build-and-test.outputs.author_email }}
           from: "GitHub Actions CI <${{ secrets.SMTP_USERNAME }}>"
           body: |
@@ -135,15 +139,17 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y ansible sshpass openssh-client
 
-      # 3. (Optional) Override hosts.ini with secret IP if webserver is dynamic
-      #    If your hosts.ini is already correct, remove this step.
-      - name: Inject webserver host from secrets (optional)
-        if: ${{ secrets.WEBSERVER_HOST != '' }}
+      # 3. Write hosts.ini from secrets (if WEBSERVER_HOST secret is set)
+      - name: Write Ansible inventory from secrets
         run: |
           cat > hosts.ini <<EOF
           [webserver]
-          ${{ secrets.WEBSERVER_HOST }} ansible_port=${{ secrets.WEBSERVER_PORT || '2222' }} ansible_user=root ansible_ssh_pass=${{ secrets.WEBSERVER_SSH_PASS }} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+          ${WEBSERVER_HOST} ansible_port=${WEBSERVER_PORT} ansible_user=root ansible_ssh_pass=${WEBSERVER_SSH_PASS} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
           EOF
+        env:
+          WEBSERVER_HOST: ${{ secrets.WEBSERVER_HOST }}
+          WEBSERVER_PORT: ${{ secrets.WEBSERVER_PORT }}
+          WEBSERVER_SSH_PASS: ${{ secrets.WEBSERVER_SSH_PASS }}
 
       # 4. Run the playbook
       - name: Run Ansible Playbook
