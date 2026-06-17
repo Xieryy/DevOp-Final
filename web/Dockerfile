@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Configure SSH Access Server on Port 2222
-RUN mkdir /var/run/sshd
+RUN mkdir -p /var/run/sshd /run/sshd
+RUN ssh-keygen -A
 RUN echo 'root:Hello@123' | chpasswd
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -i 's/Port 22/Port 2222/' /etc/ssh/sshd_config
